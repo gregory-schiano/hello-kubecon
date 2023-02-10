@@ -1,4 +1,3 @@
-import logging
 from typing import Optional
 
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires

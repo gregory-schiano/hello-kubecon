@@ -1,4 +1,3 @@
-import logging
 from typing import Optional
 
 from ops.charm import CharmBase
@@ -103,5 +102,4 @@ class Actual:
 
     @site_content.setter
     def site_content(_self, value: str) -> None:
-        logging.info("setting site content: %s", value)
         set_actual_site_content(value)
