@@ -18,6 +18,7 @@ def get(ingress_requires: Optional[IngressRequires]) -> Optional[Ingress]:
     }
     ingress_config = {**ingress_requires_config}
     ingress_config["external-hostname"] = ingress_config.pop("service-hostname")
+    return ingress_config
 
 
 def set_(

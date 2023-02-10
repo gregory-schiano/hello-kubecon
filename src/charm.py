@@ -63,7 +63,7 @@ class HelloKubeconCharm(CharmBase):
 
     def _pull_site_action(self, event) -> None:
         self._reconcile()
-        event.set_result({"result": "site pulled"})
+        event.set_results({"result": "site pulled"})
 
 
 if __name__ == "__main__":

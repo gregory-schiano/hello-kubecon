@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from ops.charm import CharmBase
@@ -88,7 +89,7 @@ class Actual:
 
         container = self._charm.unit.get_container("gosherve")
 
-        if container.can_connect():
+        if not container.can_connect():
             raise ContainerConnectionError()
 
         services = container.get_plan().to_dict().get("services", {})
@@ -97,9 +98,10 @@ class Actual:
             container.restart("gosherve")
 
     @property
-    def site_content(_self) -> str:
+    def site_content(_self) -> Optional[str]:
         return get_actual_site_content()
 
     @site_content.setter
     def site_content(_self, value: str) -> None:
+        logging.info("setting site content: %s", value)
         set_actual_site_content(value)
