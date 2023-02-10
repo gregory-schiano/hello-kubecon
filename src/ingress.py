@@ -1,25 +1,37 @@
+import logging
+from typing import Optional
+
 from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 from ops.charm import CharmBase
 
-from .types_ import Ingress
+from types_ import Ingress
 
 
-def get(ingress_requires: None | IngressRequires) -> None | Ingress:
-    if ingress_requires is None:
+def get(ingress_requires: Optional[IngressRequires]) -> Optional[Ingress]:
+    if ingress_requires is None or ingress_requires.config_dict is None:
         return None
 
-    return {
+    ingress_requires_config = {
         key: value
-        for key, value in ingress_requires.config_dict
-        if key in Ingress.__required_keys__
+        for key, value in ingress_requires.config_dict.items()
+        if key in {"service-hostname", "service-name", "service-port"}
     }
+    ingress_config = {**ingress_requires_config}
+    ingress_config["external-hostname"] = ingress_config.pop("service-hostname")
 
 
 def set_(
-    charm: CharmBase, ingress_requires: None | IngressRequires, ingress_config: Ingress
+    charm: CharmBase,
+    ingress_requires: Optional[IngressRequires],
+    ingress_config: Ingress,
 ) -> IngressRequires:
-    if ingress_requires is None:
-        return IngressRequires(charm, ingress_config)
+    ingress_requires_config = {**ingress_config}
+    ingress_requires_config["service-hostname"] = ingress_requires_config.pop(
+        "external-hostname"
+    )
 
-    ingress_requires.update_config(ingress_config)
+    if ingress_requires is None:
+        return IngressRequires(charm, ingress_requires_config)
+
+    ingress_requires.update_config(ingress_requires_config)
     return ingress_requires

@@ -13,7 +13,6 @@ develop a new k8s charm using the Operator Framework:
 """
 
 import logging
-import urllib
 
 from ops.charm import CharmBase
 from ops.main import main
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 from ops.charm import CharmBase
 
-from .state import Actual, ContainerConnectionError, Desired
+from state import Actual, ContainerConnectionError, Desired
 
 
 class HelloKubeconCharm(CharmBase):
@@ -43,11 +42,11 @@ class HelloKubeconCharm(CharmBase):
 
         self._reconcile()
 
-    def _reconcile(self) -> None:
+    def _reconcile(self, _event=None) -> None:
         try:
             if self.desired.ingress != self.actual.ingress:
                 self.unit.status = MaintenanceStatus("Updating ingress")
-                self.actual.ingress = self.actual.ingress
+                self.actual.ingress = self.desired.ingress
 
             if self.desired.redirect_map != self.actual.redirect_map:
                 self.unit.status = MaintenanceStatus("Setting redirect map")

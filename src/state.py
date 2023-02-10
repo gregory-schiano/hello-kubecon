@@ -1,13 +1,15 @@
+from typing import Optional
+
 from ops.charm import CharmBase
 
-from .gosherve import calculate_env as calculate_gosherve_env
-from .gosherve import get_redirect_map as get_gosherve_redirect_map
-from .ingress import get as get_ingress
-from .ingress import set_ as set_ingress
-from .site_ import get_local_content as get_actual_site_content
-from .site_ import get_remote_content as get_desired_site_content
-from .site_ import set_local_content as set_actual_site_content
-from .types_ import Ingress
+from gosherve import calculate_env as calculate_gosherve_env
+from gosherve import get_redirect_map as get_gosherve_redirect_map
+from ingress import get as get_ingress
+from ingress import set_ as set_ingress
+from site_ import get_local_content as get_actual_site_content
+from site_ import get_remote_content as get_desired_site_content
+from site_ import set_local_content as set_actual_site_content
+from types_ import Ingress
 
 
 class Desired:
@@ -17,15 +19,15 @@ class Desired:
     @property
     def ingress(self) -> Ingress:
         return {
-            "external-hostname": self.charm.config["external-hostname"]
-            or self.charm.app.name,
-            "service-name": self.charm.app.name,
+            "external-hostname": self._charm.config["external-hostname"]
+            or self._charm.app.name,
+            "service-name": self._charm.app.name,
             "service-port": 8080,
         }
 
     @property
     def redirect_map(self) -> str:
-        return self.charm.config["redirect-map"]
+        return self._charm.config["redirect-map"]
 
     @property
     def site_content(_self) -> str:
@@ -41,23 +43,26 @@ class Actual:
         self._charm = charm
 
     @property
-    def ingress(self) -> Ingress | None:
-        return get_ingress(self.charm.ingress)
+    def ingress(self) -> Optional[Ingress]:
+        return get_ingress(self._charm.ingress)
 
     @ingress.setter
     def ingress(self, value: Ingress) -> None:
-        self.charm.ingress = set_ingress(self.charm, self.charm.ingress)
+        self._charm.ingress = set_ingress(self._charm, self._charm.ingress, value)
 
     @property
-    def redirect_map(self) -> str | None:
-        container = self.charm.unit.get_container("gosherve")
+    def redirect_map(self) -> Optional[str]:
+        container = self._charm.unit.get_container("gosherve")
 
         if not container.can_connect():
             return None
 
         services_info = container.get_plan().to_dict().get("services", {})
 
-        if "gosherve" not in services_info["services"]:
+        if (
+            "services" not in services_info
+            or "gosherve" not in services_info["services"]
+        ):
             return None
 
         gosherve_service = services_info["services"]["gosherve"]
@@ -81,7 +86,7 @@ class Actual:
             },
         }
 
-        container = self.unit.get_container("gosherve")
+        container = self._charm.unit.get_container("gosherve")
 
         if container.can_connect():
             raise ContainerConnectionError()
