@@ -45,6 +45,8 @@ class HelloKubeconCharm(CharmBase):
         self.actual = Actual(self)
         self.desired = Desired(self)
 
+        self._reconcile_ingress()
+
     def _on_config_changed(self, event=None) -> None:
         self._reconcile_ingress(event)
         self._reconcile_redirect_map(event)
