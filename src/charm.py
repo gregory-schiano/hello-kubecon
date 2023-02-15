@@ -23,14 +23,16 @@ logger = logging.getLogger(__name__)
 
 from ops.charm import CharmBase
 
-from state import Actual, ContainerConnectionError, Desired
+from gosherve import calculate_env as calculate_gosherve_env
+from ingress import set_ as set_ingress
+from site_ import set_local_content as set_site_content
+from state import Actual, Desired
 
 
 class HelloKubeconCharm(CharmBase):
     def __init__(self, *args) -> None:
         super().__init__(*args)
 
-        self.framework.observe(self.on.install, self._reconcile)
         self.framework.observe(self.on.config_changed, self._reconcile)
         self.framework.observe(self.on.gosherve_pebble_ready, self._reconcile)
 
@@ -43,23 +45,44 @@ class HelloKubeconCharm(CharmBase):
         self._reconcile()
 
     def _reconcile(self, _event=None) -> None:
-        try:
-            if self.desired.ingress != self.actual.ingress:
-                self.unit.status = MaintenanceStatus("Updating ingress")
-                self.actual.ingress = self.desired.ingress
+        if self.desired.ingress != self.actual.ingress:
+            self.unit.status = MaintenanceStatus("Updating ingress")
+            self.ingress = set_ingress(self, self.ingress, self.desired.ingress)
 
-            if self.desired.redirect_map != self.actual.redirect_map:
-                self.unit.status = MaintenanceStatus("Setting redirect map")
-                self.actual.redirect_map = self.desired.redirect_map
+        if self.desired.redirect_map != self.actual.redirect_map:
+            self.unit.status = MaintenanceStatus("Setting redirect map")
+            gosherve_env = calculate_gosherve_env(self.desired.redirect_map)
+            gosherve_layer = {
+                "summary": "gosherve layer",
+                "description": "pebble config layer for gosherve",
+                "services": {
+                    "gosherve": {
+                        "override": "replace",
+                        "summary": "gosherve",
+                        "command": "/gosherve",
+                        "startup": "enabled",
+                        "environment": gosherve_env,
+                    }
+                },
+            }
 
-            if self.desired.site_content != self.actual.site_content:
-                self.unit.status = MaintenanceStatus("Fetching web site")
-                self.actual.site_content = self.desired.site_content
+            container = self.unit.get_container("gosherve")
 
-            self.unit.status = ActiveStatus()
+            if not container.can_connect():
+                self.unit.status = WaitingStatus(
+                    "waiting for Pebble in workload container"
+                )
+            else:
+                services = container.get_plan().to_dict().get("services", {})
+                if services != gosherve_layer["services"]:
+                    container.add_layer("gosherve", gosherve_layer, combine=True)
+                    container.restart("gosherve")
 
-        except ContainerConnectionError:
-            self.unit.status = WaitingStatus("waiting for Pebble in workload container")
+        if self.desired.site_content != self.actual.site_content:
+            self.unit.status = MaintenanceStatus("Fetching web site")
+            set_site_content(self.desired.site_content)
+
+        self.unit.status = ActiveStatus()
 
     def _pull_site_action(self, event) -> None:
         self._reconcile()

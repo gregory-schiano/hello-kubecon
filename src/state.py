@@ -2,13 +2,10 @@ from typing import Optional
 
 from ops.charm import CharmBase
 
-from gosherve import calculate_env as calculate_gosherve_env
 from gosherve import get_redirect_map as get_gosherve_redirect_map
 from ingress import get as get_ingress
-from ingress import set_ as set_ingress
 from site_ import get_local_content as get_actual_site_content
 from site_ import get_remote_content as get_desired_site_content
-from site_ import set_local_content as set_actual_site_content
 from types_ import Ingress
 
 
@@ -34,10 +31,6 @@ class Desired:
         return get_desired_site_content()
 
 
-class ContainerConnectionError(Exception):
-    """Errors with connectivity to the container."""
-
-
 class Actual:
     def __init__(self, charm: CharmBase) -> None:
         self._charm = charm
@@ -45,10 +38,6 @@ class Actual:
     @property
     def ingress(self) -> Optional[Ingress]:
         return get_ingress(self._charm.ingress)
-
-    @ingress.setter
-    def ingress(self, value: Ingress) -> None:
-        self._charm.ingress = set_ingress(self._charm, self._charm.ingress, value)
 
     @property
     def redirect_map(self) -> Optional[str]:
@@ -69,37 +58,6 @@ class Actual:
 
         return get_gosherve_redirect_map(gosherve_service["environment"])
 
-    @redirect_map.setter
-    def redirect_map(self, value: str) -> None:
-        gosherve_env = calculate_gosherve_env(value)
-        gosherve_layer = {
-            "summary": "gosherve layer",
-            "description": "pebble config layer for gosherve",
-            "services": {
-                "gosherve": {
-                    "override": "replace",
-                    "summary": "gosherve",
-                    "command": "/gosherve",
-                    "startup": "enabled",
-                    "environment": gosherve_env,
-                }
-            },
-        }
-
-        container = self._charm.unit.get_container("gosherve")
-
-        if not container.can_connect():
-            raise ContainerConnectionError()
-
-        services = container.get_plan().to_dict().get("services", {})
-        if services != gosherve_layer["services"]:
-            container.add_layer("gosherve", gosherve_layer, combine=True)
-            container.restart("gosherve")
-
     @property
     def site_content(_self) -> Optional[str]:
         return get_actual_site_content()
-
-    @site_content.setter
-    def site_content(_self, value: str) -> None:
-        set_actual_site_content(value)
