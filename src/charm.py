@@ -33,8 +33,11 @@ class HelloKubeconCharm(CharmBase):
     def __init__(self, *args) -> None:
         super().__init__(*args)
 
-        self.framework.observe(self.on.config_changed, self._reconcile)
-        self.framework.observe(self.on.gosherve_pebble_ready, self._reconcile)
+        self.framework.observe(self.on.install, self._reconcile_site_content)
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(
+            self.on.gosherve_pebble_ready, self._reconcile_redirect_map
+        )
 
         self.framework.observe(self.on.pull_site_action, self._pull_site_action)
 
@@ -42,13 +45,11 @@ class HelloKubeconCharm(CharmBase):
         self.actual = Actual(self)
         self.desired = Desired(self)
 
-        self._reconcile()
+    def _on_config_changed(self, event=None) -> None:
+        self._reconcile_ingress(event)
+        self._reconcile_redirect_map(event)
 
-    def _reconcile(self, _event=None) -> None:
-        if self.desired.ingress != self.actual.ingress:
-            self.unit.status = MaintenanceStatus("Updating ingress")
-            self.ingress = set_ingress(self, self.ingress, self.desired.ingress)
-
+    def _reconcile_redirect_map(self, _event=None) -> None:
         if self.desired.redirect_map != self.actual.redirect_map:
             self.unit.status = MaintenanceStatus("Setting redirect map")
             gosherve_env = calculate_gosherve_env(self.desired.redirect_map)
@@ -78,6 +79,14 @@ class HelloKubeconCharm(CharmBase):
                     container.add_layer("gosherve", gosherve_layer, combine=True)
                     container.restart("gosherve")
 
+        self.unit.status = ActiveStatus()
+
+    def _reconcile_ingress(self, _event=None) -> None:
+        if self.desired.ingress != self.actual.ingress:
+            self.unit.status = MaintenanceStatus("Updating ingress")
+            self.ingress = set_ingress(self, self.ingress, self.desired.ingress)
+
+    def _reconcile_site_content(self, _event=None) -> None:
         if self.desired.site_content != self.actual.site_content:
             self.unit.status = MaintenanceStatus("Fetching web site")
             set_site_content(self.desired.site_content)
@@ -85,7 +94,7 @@ class HelloKubeconCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _pull_site_action(self, event) -> None:
-        self._reconcile()
+        self._reconcile_site_content()
         event.set_results({"result": "site pulled"})
 
 
