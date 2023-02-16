@@ -4,12 +4,12 @@ from ops.charm import CharmBase
 
 from gosherve import get_redirect_map as get_gosherve_redirect_map
 from ingress import get as get_ingress
-from site_ import get_local_content as get_actual_site_content
-from site_ import get_remote_content as get_desired_site_content
+from site_ import get_local_content as get_local_site_content
+from site_ import get_remote_content as get_remote_site_content
 from types_ import Ingress
 
 
-class Desired:
+class Requested:
     def __init__(self, charm: CharmBase) -> None:
         self._charm = charm
 
@@ -28,10 +28,10 @@ class Desired:
 
     @property
     def site_content(_self) -> str:
-        return get_desired_site_content()
+        return get_remote_site_content()
 
 
-class Actual:
+class Current:
     def __init__(self, charm: CharmBase) -> None:
         self._charm = charm
 
@@ -60,4 +60,4 @@ class Actual:
 
     @property
     def site_content(_self) -> Optional[str]:
-        return get_actual_site_content()
+        return get_local_site_content()

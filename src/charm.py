@@ -26,37 +26,30 @@ from ops.charm import CharmBase
 from gosherve import calculate_env as calculate_gosherve_env
 from ingress import set_ as set_ingress
 from site_ import set_local_content as set_site_content
-from state import Actual, Desired
+from state import Current, Requested
 
 
 class HelloKubeconCharm(CharmBase):
     def __init__(self, *args) -> None:
         super().__init__(*args)
 
-        self.framework.observe(self.on.install, self._reconcile_site_content)
+        self.framework.observe(self.on.install, self._update_site_content)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(
-            self.on.gosherve_pebble_ready, self._reconcile_redirect_map
-        )
+        self.framework.observe(self.on.gosherve_pebble_ready, self._update_redirect_map)
 
         self.framework.observe(self.on.pull_site_action, self._pull_site_action)
 
         self.ingress = None
-        self.actual = Actual(self)
-        self.desired = Desired(self)
-
-        self._reconcile_ingress()
+        self.current_state = Current(self)
+        self.requested_state = Requested(self)
 
     def _on_config_changed(self, event=None) -> None:
-        self._reconcile_ingress(event)
-        self._reconcile_redirect_map(event)
+        self._update_ingress(event)
+        self._update_redirect_map(event)
 
-    def _reconcile_redirect_map(self, _event=None) -> None:
-        if self.desired.redirect_map == self.actual.redirect_map:
-            return
-
+    def _update_redirect_map(self, _event=None) -> None:
         self.unit.status = MaintenanceStatus("Setting redirect map")
-        gosherve_env = calculate_gosherve_env(self.desired.redirect_map)
+        gosherve_env = calculate_gosherve_env(self.requested_state.redirect_map)
         gosherve_layer = {
             "summary": "gosherve layer",
             "description": "pebble config layer for gosherve",
@@ -83,24 +76,18 @@ class HelloKubeconCharm(CharmBase):
 
         self.unit.status = ActiveStatus()
 
-    def _reconcile_ingress(self, _event=None) -> None:
-        if self.desired.ingress == self.actual.ingress:
-            return
-
+    def _update_ingress(self, _event=None) -> None:
         self.unit.status = MaintenanceStatus("Updating ingress")
-        self.ingress = set_ingress(self, self.ingress, self.desired.ingress)
+        self.ingress = set_ingress(self, self.ingress, self.requested_state.ingress)
 
-    def _reconcile_site_content(self, _event=None) -> None:
-        if self.desired.site_content == self.actual.site_content:
-            return
-
+    def _update_site_content(self, _event=None) -> None:
         self.unit.status = MaintenanceStatus("Fetching web site")
-        set_site_content(self.desired.site_content)
+        set_site_content(self.requested_state.site_content)
 
         self.unit.status = ActiveStatus()
 
     def _pull_site_action(self, event) -> None:
-        self._reconcile_site_content()
+        self._update_site_content()
         event.set_results({"result": "site pulled"})
 
 
