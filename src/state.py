@@ -1,8 +1,5 @@
 from ops.charm import CharmBase
 
-from gosherve import get_redirect_map as get_gosherve_redirect_map
-from ingress import get as get_ingress
-from site_ import get_local_content as get_local_site_content
 from site_ import get_remote_content as get_remote_site_content
 from types_ import Ingress
 
