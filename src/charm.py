@@ -26,7 +26,7 @@ from ops.charm import CharmBase
 from gosherve import calculate_env as calculate_gosherve_env
 from ingress import set_ as set_ingress
 from site_ import set_local_content as set_site_content
-from state import Current, Requested
+from state import State
 
 
 class HelloKubeconCharm(CharmBase):
@@ -40,8 +40,7 @@ class HelloKubeconCharm(CharmBase):
         self.framework.observe(self.on.pull_site_action, self._pull_site_action)
 
         self.ingress = None
-        self.current_state = Current(self)
-        self.requested_state = Requested(self)
+        self.state = State(self)
 
     def _on_config_changed(self, event=None) -> None:
         self._update_ingress(event)
@@ -49,7 +48,7 @@ class HelloKubeconCharm(CharmBase):
 
     def _update_redirect_map(self, _event=None) -> None:
         self.unit.status = MaintenanceStatus("Setting redirect map")
-        gosherve_env = calculate_gosherve_env(self.requested_state.redirect_map)
+        gosherve_env = calculate_gosherve_env(self.state.redirect_map)
         gosherve_layer = {
             "summary": "gosherve layer",
             "description": "pebble config layer for gosherve",
@@ -78,11 +77,11 @@ class HelloKubeconCharm(CharmBase):
 
     def _update_ingress(self, _event=None) -> None:
         self.unit.status = MaintenanceStatus("Updating ingress")
-        self.ingress = set_ingress(self, self.ingress, self.requested_state.ingress)
+        self.ingress = set_ingress(self, self.ingress, self.state.ingress)
 
     def _update_site_content(self, _event=None) -> None:
         self.unit.status = MaintenanceStatus("Fetching web site")
-        set_site_content(self.requested_state.site_content)
+        set_site_content(self.state.site_content)
 
         self.unit.status = ActiveStatus()
 
