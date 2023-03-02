@@ -78,7 +78,7 @@ class HelloKubeconCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _update_ingress(self, _event=None) -> None:
-        self.ingress = update_ingress(self, self.ingress, self.state.ingress)
+        self.ingress = update_ingress(self.ingress, self.state.ingress)
 
     def _update_site_content(self, _event=None) -> None:
         set_site_content(self.state.site_content)
