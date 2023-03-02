@@ -4,7 +4,6 @@ SITE_SRC = "https://jnsgr.uk/demo-site"
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 LOCAL_CONTENT_PATH = Path("/srv/index.html")
 
