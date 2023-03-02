@@ -15,13 +15,6 @@ def get_remote_content() -> str:
         return response.read().decode(encoding="utf-8")
 
 
-def get_local_content() -> Optional[str]:
-    if not LOCAL_CONTENT_PATH.is_file():
-        return None
-
-    return LOCAL_CONTENT_PATH.read_text(encoding="utf-8")
-
-
 def set_local_content(content: str) -> None:
     if not LOCAL_CONTENT_PATH.is_file():
         LOCAL_CONTENT_PATH.touch()

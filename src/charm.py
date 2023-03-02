@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 from ops.charm import CharmBase
 
 from gosherve import calculate_env as calculate_gosherve_env
-from ingress import set_ as set_ingress
+from ingress import init as init_ingress
+from ingress import update as update_ingress
 from site_ import set_local_content as set_site_content
 from state import State
 
@@ -42,6 +43,7 @@ class HelloKubeconCharm(CharmBase):
         self.framework.observe(self.on.pull_site_action, self._pull_site_action)
 
         self.state = State(self)
+        self.ingress = init_ingress(self, self.state.ingress)
 
     def _on_config_changed(self, event=None) -> None:
         self._update_ingress(event)
@@ -76,9 +78,7 @@ class HelloKubeconCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _update_ingress(self, _event=None) -> None:
-        self.ingress = set_ingress(
-            self, getattr(self, "ingress", None), self.state.ingress
-        )
+        self.ingress = update_ingress(self, self.ingress, self.state.ingress)
 
     def _update_site_content(self, _event=None) -> None:
         set_site_content(self.state.site_content)
