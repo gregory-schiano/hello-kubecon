@@ -28,6 +28,7 @@ from ingress import init as init_ingress
 from ingress import update as update_ingress
 from site_ import set_local_content as set_site_content
 from state import State
+from types_ import CharmState
 
 APPLICATION_NAME = "gosherve"
 
@@ -42,7 +43,7 @@ class HelloKubeconCharm(CharmBase):
 
         self.framework.observe(self.on.pull_site_action, self._pull_site_action)
 
-        self.state = State(self)
+        self.state: CharmState = State(self)
         self.ingress = init_ingress(self, self.state.ingress)
 
     def _on_config_changed(self, event=None) -> None:
