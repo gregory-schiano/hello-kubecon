@@ -43,7 +43,7 @@ class HelloKubeconCharm(CharmBase):
 
         self.framework.observe(self.on.pull_site_action, self._pull_site_action)
 
-        self.state: CharmState = State(self)
+        self.state: CharmState = State(self.config, self.app.name)
         self.ingress = init_ingress(self, self.state.ingress)
 
     def _on_config_changed(self, event=None) -> None:
@@ -59,7 +59,7 @@ class HelloKubeconCharm(CharmBase):
             self.unit.status = WaitingStatus("waiting for Pebble in workload container")
             return
 
-        gosherve_env = calculate_gosherve_env(self.state.redirect_map)
+        gosherve_env = calculate_gosherve_env(self.state.redirect_map_url)
         gosherve_layer = {
             "summary": f"{APPLICATION_NAME} layer",
             "description": f"pebble config layer for {APPLICATION_NAME}",
