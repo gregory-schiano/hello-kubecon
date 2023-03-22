@@ -29,6 +29,19 @@ def test_init(mock, ingress_config, expected_ingress_config) -> None:
 
     mock.assert_called_with(IngressRequires, charm, expected_ingress_config)
 
+@patch("charms.nginx_ingress_integrator.v0.ingress.IngressRequires.__new__")
+def test_init_no_service_hostname(mock) -> None:
+    """
+    arrange: A mocked charm and an ingress configuration that has an external-hostname
+    act: The init method is called
+    expect: An IngressRequires is instanciated using an ingress configuration that has a
+    service-hostname and no external-hostname
+    """
+    charm = MagicMock()
+    init(charm, {})
+
+    mock.assert_called_with(IngressRequires, charm, {})
+
 def test_update(ingress_config, expected_ingress_config) -> None:
     """
     arrange: A mocked IngressRequires instance and an ingress configuration that has an external-hostname

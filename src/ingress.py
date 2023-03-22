@@ -9,9 +9,10 @@ def init(
     ingress_config: Ingress,
 ) -> IngressRequires:
     ingress_requires_config = {**ingress_config}
-    ingress_requires_config["service-hostname"] = ingress_requires_config.pop(
-        "external-hostname"
-    )
+    if "external-hostname" in ingress_requires_config:
+        ingress_requires_config["service-hostname"] = ingress_requires_config.pop(
+            "external-hostname"
+        )
 
     return IngressRequires(charm, ingress_requires_config)
 
@@ -21,7 +22,8 @@ def update(
     ingress_config: Ingress,
 ) -> None:
     ingress_requires_config = {**ingress_config}
-    ingress_requires_config["service-hostname"] = ingress_requires_config.pop(
-        "external-hostname"
-    )
+    if "external-hostname" in ingress_requires_config:
+        ingress_requires_config["service-hostname"] = ingress_requires_config.pop(
+            "external-hostname"
+        )
     ingress_requires.update_config(ingress_requires_config)
