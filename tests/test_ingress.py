@@ -27,7 +27,7 @@ def test_init(mock, ingress_config, expected_ingress_config) -> None:
     charm = MagicMock()
     init(charm, ingress_config)
 
-    mock.assert_called_with(IngressRequires, charm, expected_ingress_config)
+    mock.assert_called_once_with(IngressRequires, charm, expected_ingress_config)
 
 @patch("charms.nginx_ingress_integrator.v0.ingress.IngressRequires.__new__")
 def test_init_no_service_hostname(mock) -> None:
@@ -40,7 +40,7 @@ def test_init_no_service_hostname(mock) -> None:
     charm = MagicMock()
     init(charm, {})
 
-    mock.assert_called_with(IngressRequires, charm, {})
+    mock.assert_called_once_with(IngressRequires, charm, {})
 
 def test_update(ingress_config, expected_ingress_config) -> None:
     """
@@ -53,5 +53,11 @@ def test_update(ingress_config, expected_ingress_config) -> None:
 
     update(mock, ingress_config)
 
-    mock.update_config.assert_called_with(expected_ingress_config)
+    mock.update_config.assert_called_once_with(expected_ingress_config)
 
+def test_update_no_service_hostname() -> None:
+    mock = MagicMock()
+
+    update(mock, {})
+
+    mock.update_config.assert_called_once_with({})
