@@ -56,8 +56,15 @@ def test_update(ingress_config, expected_ingress_config) -> None:
     mock.update_config.assert_called_once_with(expected_ingress_config)
 
 def test_update_no_service_hostname() -> None:
+    """
+    arrange: A mocked IngressRequires instance and an ingress configuration without external-hostname
+    act: The update method is called
+    expect: The update_config method of IngressRequires is called using an ingress configuration without
+    external-hostname
+    """
     mock = MagicMock()
+    ingress_config = {}
 
-    update(mock, {})
+    update(mock, ingress_config)
 
-    mock.update_config.assert_called_once_with({})
+    mock.update_config.assert_called_once_with(ingress_config)
